@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💖 Cute & Girly Photo Booth 💖</title>
+    <title>Hello Gorgeous</title>
     <style>
         body { 
             text-align: center; 
             font-family: 'Comic Sans MS', cursive, sans-serif; 
-            background: linear-gradient(135deg, #ffb6c1, #ff69b4, #ff1493); 
-            color: #fff;
+            background: #ffe4e1;
+            color: #333;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            background-image: url('background.jpg'); 
+            background-size: cover;
         }
         .container {
             display: flex;
@@ -28,14 +30,15 @@
         }
         video {
             width: 100%;
-            max-width: 400px;
+            max-width: 900px;
             border-radius: 15px;
             border: 5px solid #ff69b4;
             background: #fff;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
             transform: scaleX(-1);
+            filter: none;
         }
-        .controls button, .frame-options button {
+        .controls button {
             margin: 10px;
             padding: 12px 18px;
             border: none;
@@ -46,45 +49,42 @@
             font-size: 16px;
             font-weight: bold;
         }
-        .controls button:hover, .frame-options button:hover {
+        .controls button:hover {
             background-color: #ff1493;
+        }
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            color: #ff1493;
+            padding: 10px;
+            border-radius: 10px;
         }
         .photo-strip {
             display: flex;
             flex-direction: column;
             padding: 15px;
             background: #fff;
-            border-radius: 15px;
+            border-radius: 20px;
             border: 5px solid #ff69b4;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
-        }
-        .photo-strip canvas {
-            width: 150px;
-            height: 120px;
-            border-radius: 10px;
-            border: 3px solid #ff69b4;
-            margin-bottom: 10px;
+            position: relative;
         }
     </style>
 </head>
 <body>
     <h1>📸💖 Hello Gorgeous 💖📸</h1>
-    <div class="frame-options">
-        <label for="frameSelect">Choose a frame:</label>
-        <select id="frameSelect" onchange="changeFrame()">
-            <option value="#ff69b4">Pink</option>
-            <option value="#ff1493">Hot Pink</option>
-            <option value="#ffdab9">Peach</option>
-            <option value="#add8e6">Baby Blue</option>
-            <option value="#ffffff">White</option>
-        </select>
-    </div>
     <div class="container">
         <div class="camera-section">
             <video id="video" autoplay></video>
+            <div class="timer" id="timer">3</div>
             <div class="controls">
                 <button onclick="toggleCamera()">🔄 Switch Camera</button>
-                <button onclick="capturePhotoStrip()">📷 Capture 4 Shots</button>
+                <button onclick="startCountdown()">📷 Capture 4 Shots</button>
+                <button onclick="downloadStrip()">💾 Download Strip</button>
+                <button onclick="customizeStrip()">🎨 Customize Strip</button>
+                <button onclick="applyFilter()">✨ Apply Filter</button>
             </div>
         </div>
         <div class="photo-strip" id="photoStrip"></div>
@@ -92,11 +92,14 @@
     
     <script>
         let video = document.getElementById('video');
+        let timerDisplay = document.getElementById('timer');
         let photoStrip = document.getElementById('photoStrip');
         let useFrontCamera = true;
+        let filterIndex = 0;
+        let filters = ['none', 'grayscale(100%)', 'sepia(100%)', 'invert(100%)', 'blur(5px)', 'brightness(1.5)'];
 
         function startCamera() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: useFrontCamera ? 'user' : 'environment' } })
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: useFrontCamera ? 'user' : 'environment', width: { ideal: 1920 } } })
                 .then(stream => { video.srcObject = stream; })
                 .catch(err => { console.error("Error accessing webcam:", err); });
         }
@@ -106,8 +109,18 @@
             startCamera();
         }
 
-        function changeFrame() {
-            photoStrip.style.border = `5px solid ${document.getElementById('frameSelect').value}`;
+        function startCountdown() {
+            let countdown = 3;
+            timerDisplay.innerText = countdown;
+            let interval = setInterval(() => {
+                countdown--;
+                timerDisplay.innerText = countdown;
+                if (countdown === 0) {
+                    clearInterval(interval);
+                    capturePhotoStrip();
+                    timerDisplay.innerText = "Done!";
+                }
+            }, 1000);
         }
 
         function capturePhotoStrip() {
@@ -118,9 +131,31 @@
                     canvas.width = 150;
                     canvas.height = 120;
                     let ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    ctx.filter = video.style.filter;
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
                     photoStrip.appendChild(canvas);
-                }, i * 1000);
+                }, i * 3000);
+            }
+        }
+
+        function customizeStrip() {
+            let choices = ['Pink', 'Hot Pink', 'Peach', 'Baby Blue', 'Black'];
+            let choice = prompt("Choose a strip frame: " + choices.join(", "));
+            let styles = {
+                'Pink': '#ff69b4',
+                'Hot Pink': '#ff1493',
+                'Peach': '#ffdab9',
+                'Baby Blue': '#add8e6',
+                'Black': '#000000'
+            };
+            if (styles[choice]) {
+                photoStrip.style.border = `8px dashed ${styles[choice]}`;
+                photoStrip.style.padding = '20px';
+                photoStrip.style.borderRadius = '25px';
+                photoStrip.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.4)';
+            } else {
+                alert('Invalid choice! Please select from the given options.');
             }
         }
 
